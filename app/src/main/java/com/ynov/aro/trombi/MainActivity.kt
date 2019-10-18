@@ -9,17 +9,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.CheckBox
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat.startActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONArray
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.LocalDate
+import java.util.*
+import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
 
     class Student {
         var nom =""
         var picture =""
+        var present = false
     }
 
     class StudentAdapter(private val context: Context,
@@ -43,8 +51,21 @@ class MainActivity : AppCompatActivity() {
 
             val rowView = inflater.inflate(R.layout.list_item_student, parent, false)
             val nomStudent = rowView.findViewById(R.id.nom) as TextView
+            val presentStudent = rowView.findViewById(R.id.present) as CheckBox
             val student = getItem(position) as Student
             nomStudent.text = student.nom
+            nomStudent.setOnClickListener {
+
+                val selectedStudent = dataSource[position]
+                val intent = Intent(context, DetailStudentActivity::class.java)
+                intent.putExtra("picture", selectedStudent.picture)
+                intent.putExtra("nom", selectedStudent.nom)
+                startActivity(context, intent, null)
+            }
+            presentStudent.isChecked = student.present
+            presentStudent.setOnClickListener {
+                dataSource[position].present = presentStudent.isChecked
+            }
             return rowView
         }
     }
@@ -79,10 +100,10 @@ class MainActivity : AppCompatActivity() {
 
                     listStudent.setOnItemClickListener { _, _, position, _ ->
 
-                        val selectedRecipe = listItems[position]
+                        val selectedStudent = listItems[position]
                         val intent = Intent(context, DetailStudentActivity::class.java)
-                        intent.putExtra("picture", selectedRecipe.picture)
-                        intent.putExtra("nom", selectedRecipe.nom)
+                        intent.putExtra("picture", selectedStudent.picture)
+                        intent.putExtra("nom", selectedStudent.nom)
                         startActivity(intent)
                     }
                 }
@@ -91,5 +112,23 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    fun savePresenceStudent(view: View){
+        val adapter = listStudent.adapter
+        var compteur = 0
+        val path = this@MainActivity.getExternalFilesDir(null)
+        val f = File(path, LocalDate.parse(LocalDate.now().toString()).toString() + ".txt")
+        println(f.name)
+        f.delete()
+        f.createNewFile()
+        while (compteur < adapter.count){
+            var element:Student = adapter.getItem(compteur) as Student
+            f.appendText(element.nom + ":" + element.present + System.getProperty("line.separator"))
+            compteur++
+        }
+        f.forEachLine {
+            println(it)
+        }
+        Toast.makeText(this, "Fichier sauvegardé", Toast.LENGTH_SHORT).show()
+    }
 
 }
